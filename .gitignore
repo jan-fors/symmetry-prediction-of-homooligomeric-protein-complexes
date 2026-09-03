@@ -1,5 +1,8 @@
 # folders
 .scripts/*
+results/
+dat/
+configs/
 __pycache__
 
 # filetypes
@@ -11,6 +14,7 @@ __pycache__
 *.json
 *.txt
 *.fasta
+*.pt
 
 # files
 batch_download.sh

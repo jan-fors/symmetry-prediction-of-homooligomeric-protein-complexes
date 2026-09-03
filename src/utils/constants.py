@@ -1,5 +1,6 @@
 
 RANDOM_STATE=161
+VERBOSE= True
 
 # SPLITS
 TRAIN=0.7
@@ -9,3 +10,11 @@ TEST=round(1-TRAIN-VAL, 1)
 
 # METADATA
 LABEL_COLUMN="SYMM"
+
+# ENCODER
+import esm
+# for cluster
+#ESM2_MODEL = esm.pretrained.esm2_t48_15B_UR50D()()
+#EXPORTED_LAYERS=48
+
+PREDICTION_THRESHOLD = 0.5
