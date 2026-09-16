@@ -18,6 +18,7 @@ from src.io.writers.plot import plot_metrics, save_classwise_scores_plot
 from src.io.writers.write_table import save_metrics_to_csv
 from src.evaluation.metrics.per_class import per_class_metrics
 from src.io.writers.write_json import write_json
+import shutil
 
 def run_experiment(config_path : Path):
     """
@@ -35,6 +36,9 @@ def run_experiment(config_path : Path):
 
     experiment_output_folder = Path(config["output_dir"]) / Path(timestamp + "_" + experiment_name)
     os.makedirs(experiment_output_folder, exist_ok=True)
+
+    # copy config
+    shutil.copy2(config_path, Path(config["output_dir"]) / Path("config.yml") )
 
     # define logging
     logging.basicConfig(

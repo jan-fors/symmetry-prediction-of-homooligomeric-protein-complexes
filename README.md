@@ -17,9 +17,10 @@ python -m src.run_experiment <PATH TO CONFIG>
 ```sh
 result/
 ├-- best_model.pkl
+├-- config.yml
+├-- per_class_metrics.png
 ├-- run.log
+├-- test_metrics.json
 ├-- train_metrics.csv
 ├-- train_metrics.png
-├-- test_metrics.json
-├-- config.yml
 ```
