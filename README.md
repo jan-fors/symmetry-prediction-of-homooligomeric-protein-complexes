@@ -12,3 +12,14 @@ conda activate hmpred
 ```sh
 python -m src.run_experiment <PATH TO CONFIG>
 ```
+
+### Outputs
+```sh
+result/
+├-- best_model.pkl
+├-- run.log
+├-- train_metrics.csv
+├-- train_metrics.png
+├-- test_metrics.json
+├-- config.yml
+```
