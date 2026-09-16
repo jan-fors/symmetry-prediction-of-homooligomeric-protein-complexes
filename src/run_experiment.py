@@ -24,6 +24,14 @@ def run_experiment(config_path : Path):
     # check if config is valid
     # TODO
 
+    if torch.cuda.is_available():
+        device = torch.device("cuda") # Use the first available CUDA device
+        print(f"CUDA (GPU) is available. Using device: {device}")
+        # You can also specify a specific GPU, e.g., torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
+        print(f"CUDA (GPU) not available. Using device: {device}")
+
     # create output_dir
     timestamp = datetime.now().strftime("%Y%m%m_%H%M%S")
     experiment_name = test_config_path.stem
@@ -38,6 +46,10 @@ def run_experiment(config_path : Path):
     # build data
     train_dataset, val_dataset, test_dataset = build_datasets(config["dataset"], label_encoder)
 
+    print("train", len(train_dataset))
+    print("test", len(test_dataset))
+    print("val", len(val_dataset))
+
     # create dataloader
     train_dataloader, val_dataloader, test_dataloader = create_dataloaders(
         dataloader_config_data=config["dataloader"],
@@ -51,13 +63,15 @@ def run_experiment(config_path : Path):
 
     # build model
     model = build_model(config["model"])
+    # move model to device
+    model.to(device)
 
     # build optimizer
     optimizer = build_optimizer(config["optimizer"], model)
 
     # epoch loop
     epochs = config["training"]["epochs"]
-    best_model_path = train(train_dataloader, val_dataloader, model, loss_fn, optimizer, epochs, experiment_output_folder)
+    best_model_path = train(device, train_dataloader, val_dataloader, model, loss_fn, optimizer, epochs, experiment_output_folder)
 
     # test model
     model = build_model(config["model"])

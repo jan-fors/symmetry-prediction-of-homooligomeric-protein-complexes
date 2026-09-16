@@ -10,6 +10,7 @@ from src.training.metrics.f1_score import f1_score
 from tqdm import tqdm
 
 def train_epoch(
+    device, 
     train_dataloader: DataLoader,
     val_dataloader: DataLoader,
     model: nn.Module,
@@ -28,6 +29,9 @@ def train_epoch(
 
     for batch, (X, y) in tqdm(enumerate(train_dataloader), desc=f"Train Epoch {epoch}", total=training_size/train_dataloader.batch_size):
         # train epoch
+        X = X.to(device)
+        y = y.to(device)
+
         batch_loss, batch_predictions = train_batch(X, y , model, loss_fn, optimizer)
 
     # set to evaluation mode
@@ -41,8 +45,14 @@ def train_epoch(
     # Disable gradient computation
     with torch.no_grad():
         for batch, (X, y) in enumerate(val_dataloader):
+            X = X.to(device)
+            y = y.to(device)
+
             running_vloss, running_vpredictions = validate(X, y, model, loss_fn)
             
+            running_vpredictions = running_vpredictions.cpu()
+            y = y.cpu()
+
             sum_vloss += running_vloss
             predictions = np.append(predictions, running_vpredictions)
             truth = np.append(truth, y)
@@ -50,7 +60,6 @@ def train_epoch(
     avg_loss = sum_vloss / (batch + 1)
 
     print("Val. Loss:", float(avg_loss))
-
     print("Accuracy:", accuracy(truth, predictions))
     print("F1-Score:", f1_score(truth, predictions))
 
