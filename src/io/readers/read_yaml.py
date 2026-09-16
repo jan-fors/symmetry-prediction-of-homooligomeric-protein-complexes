@@ -3,6 +3,8 @@ from pathlib import Path
 import os
 from src.io.writers.verbose_print import v_print
 
+
+
 def read_yaml_to_dict(yaml_path : Path) -> dict:
     """
     """
@@ -11,7 +13,5 @@ def read_yaml_to_dict(yaml_path : Path) -> dict:
 
     with open(yaml_path, "r") as f:
         loaded_data = yaml.safe_load(f)
-
-    v_print(f"Data read from {yaml_path}")
     
     return loaded_data
