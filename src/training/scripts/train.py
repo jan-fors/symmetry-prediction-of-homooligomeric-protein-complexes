@@ -1,13 +1,13 @@
-from rich import print
-from tqdm import tqdm
+import numpy as np
 from src.io.writers.save_model import save_model
 from pathlib import Path
 from torch.utils.data import DataLoader
 from src.training.scripts.train_epoch import train_epoch
+from src.training.scripts.validate_epoch import validate_epoch
+from src.evaluation.metrics.compute_metrics import compute_metrics
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 def train(
     device,
@@ -22,36 +22,40 @@ def train(
     """
     Return path to best model
     """
-    metrics = {
-        "train": {"mean-loss": []},
-        "val": {
-            "mean-loss": [],
-            "accuracy": [],
-            "macro-f1": [],
-            "weighted-f1": [],
-     #       "auc-pr": [],
-        },
-    }
+    model.to(device)
 
-    best_model_path = None
-    best_vloss = 1000000
+    best_score, best_epoch, best_state = -np.inf, -1, None
+
+    history = []
+
     for epoch in range(num_epochs):
-        logger.info(f"Train epoch {epoch}")
-        # train & validate model
-        epoch_metrics = train_epoch(
-            device, train_dataloader, val_dataloader, model, loss_fn, optimizer, epoch
-        )
+        # train epoch
+        train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, device)
 
-        if epoch_metrics["val"]["mean-loss"] < best_vloss:
-            # save best model
-            best_vloss = epoch_metrics["val"]["mean-loss"]
+        # validate epoch
+        val_loss, val_logits, val_labels = validate_epoch(model, loss_fn, val_dataloader, device)
+
+        metrics = compute_metrics(val_labels, val_logits) # threshold 0.5
+
+        record = {"epoch": epoch, "train_loss": train_loss,
+                  "val_loss": val_loss, **metrics}
+        
+        history.append(record)
+
+        logger.info(f"epoch {epoch:3d} | train {train_loss:.4f} | val {val_loss:.4f} "
+              f"| AP {metrics['ap_macro']:.4f} | F1 {metrics['f1_macro']:.4f}")
+
+        score = metrics["f1_macro"]
+
+        if score > best_score:
+            best_score, best_epoch = score, epoch
+            best_state = model.state_dict()
             best_model_path = save_model(model, output_dir)
+        else:
+            #TODO
+            pass
 
-        metrics["train"]["mean-loss"].append(epoch_metrics["train"]["mean-loss"])
-        metrics["val"]["mean-loss"].append(epoch_metrics["val"]["mean-loss"])
-        metrics["val"]["accuracy"].append(epoch_metrics["val"]["accuracy"])
-        metrics["val"]["macro-f1"].append(epoch_metrics["val"]["macro-f1"])
-        metrics["val"]["weighted-f1"].append(epoch_metrics["val"]["weighted-f1"])
-    #    metrics["val"]["auc-pr"].append(epoch_metrics["val"]["auc-pr"])
+    model.load_state_dict(best_state)
+    logger.info(f"best epoch {best_epoch}, f1-macro = {best_score:.4f}")
 
-    return best_model_path, metrics
+    return model, history

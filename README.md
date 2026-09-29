@@ -6,9 +6,16 @@ conda env create -f environment.yml
 conda activate hmpred
 ```
 
+## Run Inference
+
+
 ## Run Experiment
 1. Create experiment specific config file in `configs/experiments` matching the config requirements from `docs/config.md`
-2. Run 
+2. Validate the created config with
+```sh
+python -m src.validate_config <PATH TO CONFIG>
+```
+3. Run 
 ```sh
 python -m src.run_experiment <PATH TO CONFIG>
 ```

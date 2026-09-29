@@ -3,170 +3,317 @@ import seaborn as sns
 import numpy as np
 import re
 from pathlib import Path
+import pandas as pd
 
-def plot_metrics(metrics, save_path=None):
+def plot_metrics(history, save_path=None):
     """
-    Plot all metric values against epoch number.
+    Plot per-epoch metrics against epoch number.
 
     Parameters
     ----------
-    metrics : dict
-        Nested dictionary containing metric lists, for example:
-        {
-            "train": {"mean-loss": [...]},
-            "val": {
-                "mean-loss": [...],
-                "accuracy": [...],
-                "macro-f1": [...],
-                "weighted-f1": [...],
-                "auc-pr": [...]
-            }
-        }
-
+    history : list of dict
+        One dict per epoch, as returned by `fit`, e.g.
+        {"epoch": 1, "train_loss": ..., "val_loss": ..., "val_ap_macro": ...}
     save_path : str, optional
         Path where the plot should be saved.
     """
+    if not history:
+        return None
+
+    # Pivot: {"train_loss": [...], "val_ap_macro": [...], ...}
+    series = {}
+    for record in history:
+        for key, value in record.items():
+            if key == "epoch" or not isinstance(value, (int, float)):
+                continue
+            series.setdefault(key, []).append(value)
+
+    epochs = [record.get("epoch", i) for i, record in enumerate(history, start=1)]
+
+    # Losses on their own axis, everything else (bounded 0-1) on the second
+    loss_keys = [k for k in series if "loss" in k.lower()]
+    score_keys = [k for k in series if k not in loss_keys]
 
     sns.set_theme(style="whitegrid")
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    palette = sns.color_palette("tab10", n_colors=len(series))
+    colors = dict(zip(series, palette))
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-
-    # Create enough distinct colors for all train/validation metrics
-    metric_names = [
-        f"{split} - {metric_name}"
-        for split, split_metrics in metrics.items()
-        for metric_name in split_metrics
-    ]
-
-    colors = sns.color_palette("tab10", n_colors=len(metric_names))
-
-    color_index = 0
-
-    for split, split_metrics in metrics.items():
-        for metric_name, values in split_metrics.items():
-            if not values:
-                continue
-
-            epochs = range(1, len(values) + 1)
-
+    for ax, keys, title in (
+        (axes[0], loss_keys, "Loss"),
+        (axes[1], score_keys, "Validation metrics"),
+    ):
+        for key in keys:
+            values = series[key]
             ax.plot(
-                epochs,
+                epochs[: len(values)],
                 values,
-                label=f"{split} {metric_name}",
-                color=colors[color_index],
+                label=key.replace("_", " "),
+                color=colors[key],
                 marker="o",
                 linewidth=2,
                 markersize=4,
             )
+        ax.set_xlabel("Epoch")
+        ax.set_title(title)
+        ax.grid(True, alpha=0.3)
+        if keys:
+            ax.legend()
 
-            color_index += 1
-
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Value")
-    ax.set_title("Training and Validation Metrics")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    axes[1].set_ylim(0, 1)
 
     plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+  
 
-    if save_path is not None:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-
-
-def natural_sort_key(value):
-    """
-    Sort strings naturally, e.g. C1, C2, C10 instead of C1, C10, C2.
-    """
-    return [
-        int(part) if part.isdigit() else part.lower()
-        for part in re.split(r"(\d+)", value)
-    ]
-
-def save_classwise_scores_plot(
-    scores,
+def plot_class_metrics(
     metrics,
-    output_path="classwise_scores.png",
-    figsize=(12, 6),
-    dpi=300
+    figsize=(18, 11),
+    min_support=1,
+    sort_by="f1",
+    save_path=None,
 ):
     """
-    Save a grouped bar plot of selected class-wise evaluation scores.
+    Plot per-class metrics using bar charts.
+
+    Panels:
+      1. Grouped horizontal bars for precision, recall, F1, AP, and AUROC
+      2. Horizontal bars for true support
+      3. Grouped bars for TP, FP, and FN
 
     Parameters
     ----------
-    scores : dict
-        Dictionary containing a "per-class" key.
-
-    metrics : str or list[str]
-        Metric or metrics to plot, for example:
-        "accuracy"
-        or
-        ["accuracy", "macro-f1"]
-
-    output_path : str or pathlib.Path
-        Location where the plot will be saved.
-
+    metrics : pd.DataFrame or str
+        Metrics DataFrame or path to a CSV file.
     figsize : tuple
         Figure size.
+    min_support : int
+        Only include classes with at least this many true samples.
+    sort_by : str
+        Column used to sort classes, e.g. "f1", "support", or "auroc".
+    save_path : str or None
+        Optional path for saving the plot.
 
-    dpi : int
-        Resolution of the saved plot.
+    Returns
+    -------
+    fig, axes
     """
 
-    # Allow a single metric to be passed as a string
+    # Load metrics
     if isinstance(metrics, str):
-        metrics = [metrics]
+        df = pd.read_csv(metrics)
+    else:
+        df = metrics.copy()
 
-    # Sort classes naturally: C1, C2, ..., C10
-    classes = sorted(
-        scores["per-class"].keys(),
-        key=natural_sort_key
+    # Remove summary rows
+    df = df[~df["class"].isin(["MACRO", "MICRO"])].copy()
+
+    # Convert columns to numeric
+    numeric_columns = [
+        "support",
+        "prevalence",
+        "predicted",
+        "precision",
+        "recall",
+        "f1",
+        "ap",
+        "auroc",
+        "tp",
+        "fp",
+        "fn",
+    ]
+
+    for column in numeric_columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    # Exclude classes with no true examples
+    df = df[df["support"] >= min_support].copy()
+
+    if df.empty:
+        raise ValueError("No classes remain after applying min_support.")
+
+    if sort_by not in df.columns:
+        raise ValueError(f"Unknown sort_by column: {sort_by}")
+
+    metric_columns = ["precision", "recall", "f1", "ap", "auroc"]
+
+    # AP/AUROC may be NaN for classes with insufficient examples
+    df[metric_columns] = df[metric_columns].fillna(0)
+
+    # Sort classes
+    df = df.sort_values(sort_by, ascending=True).reset_index(drop=True)
+
+    sns.set_theme(style="whitegrid", context="talk")
+
+    fig = plt.figure(figsize=figsize, constrained_layout=True)
+
+    grid = fig.add_gridspec(
+        nrows=2,
+        ncols=2,
+        height_ratios=[2.5, 1.2],
+        width_ratios=[3.4, 1.3],
     )
 
-    # Validate requested metrics
-    available_metrics = set(scores["per-class"][classes[0]].keys())
-    missing_metrics = set(metrics) - available_metrics
+    ax_metrics = fig.add_subplot(grid[0, 0])
+    ax_support = fig.add_subplot(grid[0, 1])
+    ax_confusion = fig.add_subplot(grid[1, :])
 
-    if missing_metrics:
-        raise ValueError(
-            f"Unknown metric(s): {sorted(missing_metrics)}. "
-            f"Available metrics are: {sorted(available_metrics)}"
+    classes = df["class"].astype(str)
+    y = np.arange(len(df))
+
+    # ------------------------------------------------------------------
+    # Panel 1: grouped horizontal bar chart for performance metrics
+    # ------------------------------------------------------------------
+
+    metric_colors = {
+        "precision": "#4C78A8",
+        "recall": "#F58518",
+        "f1": "#54A24B",
+        "ap": "#B279A2",
+        "auroc": "#E45756",
+    }
+
+    n_metrics = len(metric_columns)
+    bar_height = 0.15
+
+    for index, metric in enumerate(metric_columns):
+        offset = (index - (n_metrics - 1) / 2) * bar_height
+
+        bars = ax_metrics.barh(
+            y + offset,
+            df[metric],
+            height=bar_height,
+            color=metric_colors[metric],
+            label=metric.upper(),
+            edgecolor="none",
         )
 
-    x = np.arange(len(classes))
-    width = 0.8 / len(metrics)
+        # Add metric values to the end of the bars
+        for bar, value in zip(bars, df[metric]):
+            if value > 0:
+                ax_metrics.text(
+                    value + 0.012,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{value:.2f}",
+                    va="center",
+                    ha="left",
+                    fontsize=8,
+                )
 
-    fig, ax = plt.subplots(figsize=figsize)
+    ax_metrics.set_yticks(y)
+    ax_metrics.set_yticklabels(classes)
+    ax_metrics.set_xlim(0, 1.10)
+    ax_metrics.set_xlabel("Score")
+    ax_metrics.set_ylabel("Class")
+    ax_metrics.set_title("Per-class performance", weight="bold")
 
-    for i, metric in enumerate(metrics):
-        values = [
-            scores["per-class"][class_name][metric]
-            for class_name in classes
-        ]
+    ax_metrics.axvline(
+        0.5,
+        color="gray",
+        linestyle="--",
+        linewidth=1,
+        alpha=0.7,
+    )
 
-        offset = (i - (len(metrics) - 1) / 2) * width
+    ax_metrics.legend(
+        title="Metric",
+        loc="lower right",
+        ncol=3,
+        fontsize=10,
+    )
 
-        ax.bar(
-            x + offset,
-            values,
-            width,
-            label=metric
+    # Add alternating background bands
+    for index in range(len(df)):
+        if index % 2 == 0:
+            ax_metrics.axhspan(
+                index - 0.5,
+                index + 0.5,
+                color="black",
+                alpha=0.025,
+                zorder=0,
+            )
+
+    # ------------------------------------------------------------------
+    # Panel 2: support
+    # ------------------------------------------------------------------
+
+    support_bars = ax_support.barh(
+        y,
+        df["support"],
+        color="#72B7B2",
+        edgecolor="none",
+    )
+
+    ax_support.set_yticks(y)
+    ax_support.set_yticklabels([])
+    ax_support.set_xlabel("True support")
+    ax_support.set_title("Class support", weight="bold")
+
+    # Use a logarithmic scale for highly imbalanced support
+    if df["support"].max() / max(df["support"].min(), 1) >= 20:
+        ax_support.set_xscale("log")
+
+    for bar, value in zip(support_bars, df["support"]):
+        ax_support.text(
+            bar.get_width(),
+            bar.get_y() + bar.get_height() / 2,
+            f" {int(value)}",
+            va="center",
+            ha="left",
+            fontsize=9,
         )
 
-    ax.set_xlabel("Class")
-    ax.set_ylabel("Score")
-    ax.set_title("Class-wise Evaluation Scores")
-    ax.set_xticks(x)
-    ax.set_xticklabels(classes, rotation=45, ha="right")
-    ax.set_ylim(0, 1.05)
-    ax.legend()
-    ax.grid(axis="y", alpha=0.3)
+    # ------------------------------------------------------------------
+    # Panel 3: TP / FP / FN
+    # ------------------------------------------------------------------
 
-    fig.tight_layout()
+    confusion_data = df.set_index("class")[["tp", "fp", "fn"]].fillna(0)
 
-    # Create output directory if necessary
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    confusion_data.plot(
+        kind="bar",
+        ax=ax_confusion,
+        width=0.78,
+        color=["#54A24B", "#E45756", "#F2CF5B"],
+        edgecolor="none",
+    )
 
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
+    ax_confusion.set_title("Prediction counts", weight="bold")
+    ax_confusion.set_xlabel("")
+    ax_confusion.set_ylabel("Count")
+    ax_confusion.tick_params(axis="x", rotation=45)
+
+    ax_confusion.legend(
+        ["TP", "FP", "FN"],
+        title="",
+        ncol=3,
+        loc="upper left",
+    )
+
+    # ------------------------------------------------------------------
+    # Formatting
+    # ------------------------------------------------------------------
+
+    fig.suptitle(
+        "Per-class Classification Metrics",
+        fontsize=24,
+        fontweight="bold",
+    )
+
+    for ax in [ax_metrics, ax_support, ax_confusion]:
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    if save_path:
+        fig.savefig(
+            save_path,
+            dpi=300,
+            bbox_inches="tight",
+            facecolor="white",
+        )
+
+    return fig, {
+        "performance": ax_metrics,
+        "support": ax_support,
+        "confusion": ax_confusion,
+    }
