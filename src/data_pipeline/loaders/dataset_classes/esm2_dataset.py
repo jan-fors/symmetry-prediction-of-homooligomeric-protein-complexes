@@ -40,6 +40,7 @@ class ESM2EmbeddingDataset(Dataset):
         # create self.data
         self.data = []
         self.labels = []
+        dropped = 0
 
         for index, row in metadata_subset.iterrows():
             chain_id = row["CHAINID"]
@@ -54,6 +55,9 @@ class ESM2EmbeddingDataset(Dataset):
                 self.labels.append(symm)
             except Exception as e:
                 logger.warning(e)
+                dropped += 1
+
+        logger.info(f"Dropped {dropped} items because of wrong path or format")
 
     def __len__(self):
         return len(self.data)

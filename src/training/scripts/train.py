@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from src.io.writers.save_model import save_model
 from pathlib import Path
 from torch.utils.data import DataLoader
@@ -55,7 +56,7 @@ def train(
             #TODO
             pass
 
-    model.load_state_dict(best_state)
+    model.load_state_dict(torch.load(best_model_path, weights_only=True))
     logger.info(f"best epoch {best_epoch}, f1-macro = {best_score:.4f}")
 
     return model, history
