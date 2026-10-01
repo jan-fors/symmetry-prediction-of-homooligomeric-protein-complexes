@@ -60,6 +60,7 @@ def run_experiment(config_path : Path):
 
     # build model
     model = build_model(config["model"])
+    logger.info(model)
 
     # move model to device
     logger.info(f"Moving model to {device}.")

@@ -41,7 +41,7 @@ def get_unique_labels(config : dict) -> List[str]:
         for key in label_groups.keys():
             unique_labels.append(key)
 
-    unique_labels = unique_labels.sort()
+    unique_labels.sort()
         
     logger.info(f"Identified {len(unique_labels)} unique labels.")
 
