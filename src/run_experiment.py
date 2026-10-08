@@ -55,9 +55,6 @@ def run_experiment(config_path : Path):
         test=test_dataset,
     )
 
-    # build loss
-    loss_fn = build_loss_fn(config["loss"])
-
     # build model
     model = build_model(config["model"])
     logger.info(model)
@@ -65,6 +62,9 @@ def run_experiment(config_path : Path):
     # move model to device
     logger.info(f"Moving model to {device}.")
     model.to(device)
+
+    # build loss
+    loss_fn = build_loss_fn(config["loss"])
 
     # build optimizer
     optimizer = build_optimizer(config["optimizer"], model)

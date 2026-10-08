@@ -1,8 +1,8 @@
 # General
 - [X] from and to device? https://stackoverflow.com/questions/63061779/pytorch-when-do-i-need-to-use-todevice-on-a-model-or-tensor
-- [ ] SANITY CHECK
-    - [ ] does prediction threshold in constants make sense like this?
-- [ ] Refactor
+- [X] SANITY CHECK
+    - [X] does prediction threshold in constants make sense like this?
+- [X] Refactor
 - [X] add logging
 - [X] define training output of project:
     - [X] each epoch several metrics should be taken in order to compare runs afterwards
@@ -18,7 +18,7 @@
 
 # Architecture
 - [ ] implement attention pooling
-- [ ] implement margin loss function
+- [X] implement margin loss function
 
 # Hyperparameters
 - [ ] implement some search algo for hyperparameter search

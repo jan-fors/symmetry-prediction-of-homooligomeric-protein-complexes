@@ -27,7 +27,7 @@ def train_epoch(model, loader, loss_fn, optimizer, device):
         
         logits = model(X)
 
-        loss = loss_fn(logits, y)
+        loss = loss_fn(logits, y, model)
         losses.append(loss.item())
 
         loss.backward()

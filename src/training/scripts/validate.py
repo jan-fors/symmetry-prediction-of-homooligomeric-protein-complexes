@@ -13,6 +13,6 @@ def validate(X, y, model : nn.Module, loss_fn : nn.Module):
     #predictions = (logits >= PREDICTION_THRESHOLD).int()
 
     # calcualte loss
-    loss = loss_fn(logits, y)
+    loss = loss_fn(logits, y, model)
     
     return loss, logits

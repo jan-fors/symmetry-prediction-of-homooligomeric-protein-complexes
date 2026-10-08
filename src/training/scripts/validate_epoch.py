@@ -18,7 +18,7 @@ def validate_epoch(model, loss_fn, loader, device):
 
             logits = model(X)
 
-            loss = loss_fn(logits, y)
+            loss = loss_fn(logits, y, model)
 
             losses.append(loss.item())
             all_logits.append(logits.cpu())
