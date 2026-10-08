@@ -52,9 +52,6 @@ def train(
             best_score, best_epoch = score, epoch
             best_state = model.state_dict()
             best_model_path = save_model(model, output_dir)
-        else:
-            #TODO
-            pass
 
     model.load_state_dict(torch.load(best_model_path, weights_only=True))
     logger.info(f"best epoch {best_epoch}, f1-macro = {best_score:.4f}")

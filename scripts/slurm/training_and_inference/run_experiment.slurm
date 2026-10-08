@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=hmpred
-#SBATCH --output=/work2/mb92adej-homoerprediction/%x-%j.out
-#SBATCH --error=/work2/mb92adej-homoerprediction/%x-%j.err
+#SBATCH --output=/work2/mb92adej-homomultimerprediction/logs/%x-%j.out
+#SBATCH --error=/work2/mb92adej-homomultimerprediction/logs/%x-%j.err
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
@@ -18,7 +18,7 @@ conda activate hmpred
 
 export PATH="$CONDA_PREFIX/bin:$PATH" # TODO can be removed?
 
-EXPERIMENT_PATH=/home/sc.uni-leipzig.de/mb92adej/homomultimerprediction/configs/experiments
+EXPERIMENT_PATH=/home/sc.uni-leipzig.de/mb92adej/homomultimerprediction/configs/experiments/cluster
 CONFIG_NAME=$1
 
 python -m src.run_experiment $EXPERIMENT_PATH/$CONFIG_NAME
