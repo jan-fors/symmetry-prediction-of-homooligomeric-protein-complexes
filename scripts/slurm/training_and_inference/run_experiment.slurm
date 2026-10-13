@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=hmpred
-#SBATCH --output=/work2/mb92adej-homomultimerprediction/logs/%x-%j.out
-#SBATCH --error=/work2/mb92adej-homomultimerprediction/logs/%x-%j.err
+#SBATCH --job-name=hmpred_experiment
+#SBATCH --output=/work2/mb92adej-homomultimerprediction/logs/experiment/%x-%j.out
+#SBATCH --error=/work2/mb92adej-homomultimerprediction/logs/experiment/%x-%j.err
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
