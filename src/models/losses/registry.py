@@ -29,24 +29,19 @@ def build_loss_fn(loss_fns : List[dict]):
     """
     logger.info("Defining loss function")
     
-    if len(loss_fns) == 1: # Return the selected loss function
-        if loss_fns[0]["name"] in LOSS_REGISTRY.keys():
-            loss_fn = LOSS_REGISTRY[loss_fns[0]["name"]]
-            return CombinedLoss([(1.0, loss_fn)], None)
+    losses = []
+    regularizations = []
+
+    for i in range(len(loss_fns)):
+        name = loss_fns[i]["name"]
+        factor = loss_fns[i]["factor"]
+        if name in LOSS_REGISTRY.keys():
+            losses.append((factor, LOSS_REGISTRY[name]))
+        elif name in REGULARIZATION_REGISTRY.keys():
+            regularizations.append((factor, REGULARIZATION_REGISTRY[name]))
         else:
-            logger.error("Must provide basic loss function, not just regularization.")
-    else: # Create loss combination
-        losses = []
-        regularizations = []
-
-        for i in range(len(loss_fns)):
-            if loss_fns[i]["name"] in LOSS_REGISTRY.keys():
-                losses.append((loss_fns[i]["factor"], LOSS_REGISTRY[loss_fns[i]["name"]]))
-            elif loss_fns[i]["name"] in REGULARIZATION_REGISTRY.keys():
-                regularizations.append((loss_fns[i]["factor"], REGULARIZATION_REGISTRY[loss_fns[i]["name"]]))
-            else:
-                logger.warning(f"{loss_fns[i]['name']} not in ")
+            logger.warning(f"{name} not in ")
 
 
-        return CombinedLoss(losses, regularizations)
+    return CombinedLoss(losses, regularizations)
 

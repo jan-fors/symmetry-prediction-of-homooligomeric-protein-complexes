@@ -19,7 +19,7 @@ class SimpleMLPClassifier(nn.Module):
         self.dense2 = nn.Linear(hidden_dim, num_classes)
 
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor,mask = None) -> torch.Tensor:
         """
         """
         x = self.dense1(x)

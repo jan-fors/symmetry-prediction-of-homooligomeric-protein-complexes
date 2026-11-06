@@ -4,7 +4,7 @@ import torch
 from pathlib import Path
 from src.utils.config_loader import load_config
 from src.data_pipeline.loaders.dataset_classes.registry import build_datasets
-from src.data_pipeline.loaders.dataloader_handler import create_dataloaders
+from src.data_pipeline.loaders.dataloader.registry import create_dataloaders
 from src.models.losses.registry import build_loss_fn
 from src.models.optimizers.registry import build_optimizer
 from src.models.architectures.registry import build_model

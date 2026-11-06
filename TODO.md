@@ -21,6 +21,6 @@
 - [X] implement margin loss function
 
 # Hyperparameters
-- [ ] implement some search algo for hyperparameter search
-
+- [X] implement some search algo for hyperparameter search
+- [ ] implement k-fold cv
 

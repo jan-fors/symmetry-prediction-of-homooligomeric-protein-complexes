@@ -19,13 +19,15 @@ def train_epoch(model, loader, loss_fn, optimizer, device):
 
     losses = []
 
-    for batch, (X, y) in enumerate(loader):
+    for batch, (X, y, mask) in enumerate(loader):
         X = X.to(device)
         y = y.to(device)
+        if mask is not None:
+            mask = mask.to(device)
 
         optimizer.zero_grad()
-        
-        logits = model(X)
+
+        logits = model(X, mask)
 
         loss = loss_fn(logits, y, model)
         losses.append(loss.item())
@@ -35,3 +37,6 @@ def train_epoch(model, loader, loss_fn, optimizer, device):
         optimizer.step()
 
     return float(np.mean(losses))
+
+# for features, mask, y in loader:
+#     predictions = model(features, mask)

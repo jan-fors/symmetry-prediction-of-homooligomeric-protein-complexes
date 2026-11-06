@@ -58,7 +58,7 @@ def split(input : Path, name : str, output_dir : Path):
 
     # perform randomized split
     train_cl, test_cl = train_test_split(cluster_ids_unique, test_size=(VAL+TEST), random_state=RANDOM_STATE, shuffle=True)
-    test_cl, val_cl = train_test_split(test_cl, test_size=0.33, random_state=RANDOM_STATE, shuffle=True)
+    test_cl, val_cl = train_test_split(test_cl, test_size=TEST, random_state=RANDOM_STATE, shuffle=True)
 
     print(f"Clusters in train: {len(train_cl)}\nClusters in val: {len(val_cl)}\nClusters in test: {len(test_cl)}")
 

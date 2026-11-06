@@ -4,8 +4,9 @@ Model registry.py
 Select a model and specify parameters in the config?
 
 """
-from src.models.architectures.simple_mlp_classifier import SimpleMLPClassifier
-from src.models.architectures.mlp_classifier import MLPClassifier
+from src.models.architectures.ffn.simple_mlp_classifier import SimpleMLPClassifier
+from src.models.architectures.ffn.mlp_classifier import MLPClassifier
+from src.models.architectures.robertalmhead import RobertaLMHead
 
 import logging
 logger = logging.getLogger(__name__)
@@ -13,7 +14,8 @@ logger = logging.getLogger(__name__)
 MODEL_REGISTRY = {
     "simple_mlp_classifier": SimpleMLPClassifier,
     "mlp_classifier": MLPClassifier,
-    "robertalmhead": None
+    "robertalmhead": RobertaLMHead,
+    
 }
 
 def build_model(model_config : dict):

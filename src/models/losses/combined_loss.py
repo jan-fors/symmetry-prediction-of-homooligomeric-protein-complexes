@@ -7,18 +7,16 @@ class CombinedLoss(nn.Module):
         Add pairs of factors and loss functions.
         """
         super(CombinedLoss, self).__init__()
-        self.losses = [
-            (factor, loss_fn())
-            for factor, loss_fn in losses
-        ]
 
-        if regularizations != None:
-            self.regularizations = [
-                (factor, regu())
-                for factor, regu in regularizations
-            ]
-        else:
-            self.regularizations = None
+        self.loss_weights = [factor for factor, _ in losses]
+        self.losses = nn.ModuleList([loss_fn() for _, loss_fn in losses])
+        
+        self.reg_weights = []
+        self.regularizations = nn.ModuleList()
+
+        if regularizations is not None:
+            self.reg_weights = [factor for factor, _ in regularizations]
+            self.regularizations = nn.ModuleList([regu() for _, regu in regularizations])
 
     def forward(self, logits, target, model):
         """
@@ -26,12 +24,12 @@ class CombinedLoss(nn.Module):
         loss = 0.0
 
         # losses
-        for factor, fn in self.losses:
-            loss = loss + factor * fn(logits, target)
+        for weight, fn in zip(self.loss_weights, self.losses):
+            loss = loss + weight * fn(logits, target)
 
         # regularizations
         if self.regularizations != None:
-            for factor, regu in self.regularizations:
-                loss = loss + factor * regu(model)
+            for weight, regu in zip(self.reg_weights, self.regularizations):
+                loss = loss + weight * regu(model)
 
         return loss

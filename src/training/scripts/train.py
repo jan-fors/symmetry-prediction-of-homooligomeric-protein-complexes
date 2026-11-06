@@ -25,7 +25,7 @@ def train(
     """
     model.to(device)
 
-    best_score, best_epoch, best_state = -np.inf, -1, None
+    best_score, best_epoch = -np.inf, -1
 
     history = []
 
@@ -50,7 +50,6 @@ def train(
 
         if score > best_score:
             best_score, best_epoch = score, epoch
-            best_state = model.state_dict()
             best_model_path = save_model(model, output_dir)
 
     model.load_state_dict(torch.load(best_model_path, weights_only=True))

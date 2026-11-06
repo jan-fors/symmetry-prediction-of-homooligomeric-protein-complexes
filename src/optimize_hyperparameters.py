@@ -8,7 +8,7 @@ from optuna.trial import TrialState
 from src.training.hyperparameters.objective import objective
 from functools import partial
 from src.data_pipeline.loaders.dataset_classes.registry import build_datasets
-from src.data_pipeline.loaders.dataloader_handler import create_dataloaders
+from src.data_pipeline.loaders.dataloader.dataloader_handler import create_dataloaders
 from src.data_pipeline.preprocessing.encoders.label import MultiLabelEncoder
 from src.io.writers.output_dir import create_experiment_output_dir
 from src.io.logging.logging import init_logging

@@ -12,11 +12,14 @@ def validate_epoch(model, loss_fn, loader, device):
     losses = []
 
     with torch.no_grad():
-        for batch, (X, y) in enumerate(loader):
+        for batch, (X, y, mask) in enumerate(loader):
             X = X.to(device)
             y = y.to(device)
+            
+            if mask is not None:
+                mask = mask.to(device)
 
-            logits = model(X)
+            logits = model(X, mask)
 
             loss = loss_fn(logits, y, model)
 
