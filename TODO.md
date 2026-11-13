@@ -17,7 +17,7 @@
 - [ ] add example inference results -> some random pdbs and their corresponding symmetries (best and worst hits)
 
 # Architecture
-- [ ] implement attention pooling
+- [X] implement attention pooling
 - [X] implement margin loss function
 
 # Hyperparameters

@@ -1,3 +1,7 @@
+"""
+Skript to validate a config file for an experiment or a hyperparameter optimization
+"""
+# imports
 import argparse
 
 def validate_config():
