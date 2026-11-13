@@ -16,4 +16,6 @@ def create_transformations(augmentations : List) -> List:
         transformation = TRANSFORMATION_REGSITRY[name]
         res.append(transformation(**aug["params"]))
 
+    if len(res) == 0:
+        return None
     return res

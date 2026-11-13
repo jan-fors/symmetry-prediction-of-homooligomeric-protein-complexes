@@ -1,0 +1,35 @@
+experiment_name: local_test
+output_dir: example/results
+dataset:
+  split: example/split
+  metadata_file: example/metadata.csv
+  features:
+    - class: esm2
+      data_dir: example/features
+      augmentations:
+        - name: layer
+          params:
+            layer: 33
+
+
+dataloader:
+  collate_fn: collate_proteins
+  batch_size: 8
+  shuffle: yes
+loss:
+  - name: bce
+    factor: 1.0
+optimizer:
+  name: adam
+  lr: 0.001
+
+model:
+  name: simattn_classifier
+  params:
+    embed_dim: 1280
+    num_heads: 2
+    num_classes: 16
+    hidden_dim: 6
+
+training:
+  epochs: 5

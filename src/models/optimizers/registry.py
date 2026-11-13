@@ -9,7 +9,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 OPTIMIZER_REGISTRY = {
-    "adam": optim.Adam
+    "adam": optim.Adam,
+    "sgd": optim.SGD,
 }
 
 def build_optimizer(optim_config : dict, model : nn.Module) -> optim.Optimizer:
@@ -25,4 +26,7 @@ def build_optimizer(optim_config : dict, model : nn.Module) -> optim.Optimizer:
 
     learning_rate = optim_config["lr"]
 
+    if "momentum" in optim_config.keys():
+        return optim_class(model.parameters(), lr=learning_rate, momentum=optim_config["momentum"])
+    
     return optim_class(model.parameters(), lr=learning_rate)
