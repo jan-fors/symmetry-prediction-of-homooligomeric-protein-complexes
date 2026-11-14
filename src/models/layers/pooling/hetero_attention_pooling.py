@@ -8,16 +8,16 @@ Uses a basic query vector that can be learned and pools using the attention weig
 # imports
 import torch
 from torch import nn
-from src.models.layers.attention.simple_attention import SimpleAttention
+from src.models.layers.attention.hetero_query_attention import HeteroQueryAttention
 
-class AttentionPooling(nn.Module):
+class HeteroAttentionPooling(nn.Module):
     def __init__(self, embed_dim : int, num_heads : int = 1, max_sequence_len : int = 1024):
         """
         TODO weighted average over length usuing calculated weights from attention
         """
         super().__init__()
 
-        self.attn = SimpleAttention(embed_dim, num_heads, max_sequence_len)
+        self.attn = HeteroQueryAttention(embed_dim, num_heads, max_sequence_len)
 
     def forward(self, x: torch.Tensor, mask = None) -> torch.Tensor:
         """

@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
  
  
-class SimpleAttention(nn.Module):
+class HeteroQueryAttention(nn.Module):
     def __init__(self, embed_dim, num_heads: int = 1, max_seq_len: int = 1024):
         super().__init__()
         if embed_dim % num_heads != 0:
