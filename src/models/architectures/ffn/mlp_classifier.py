@@ -9,6 +9,7 @@ class MLPClassifier(nn.Module):
         """
         super(MLPClassifier, self).__init__()
 
+        # define network
         self.dense1 = nn.Linear(input_dim, hidden_dims[0])
         self.act1 = activation_fn()
 
@@ -18,7 +19,6 @@ class MLPClassifier(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
 
         self.dense3 = nn.Linear(hidden_dims[1], num_classes)
-
 
     def forward(self, x: torch.Tensor, mask = None) -> torch.Tensor:
         """
@@ -31,3 +31,4 @@ class MLPClassifier(nn.Module):
         x = self.dense3(x)
 
         return x
+

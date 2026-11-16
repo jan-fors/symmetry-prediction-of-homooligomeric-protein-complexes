@@ -12,7 +12,7 @@ TEST=round(1-TRAIN-VAL, 1)
 LABEL_COLUMN="SYMM"
 
 # ENCODER
-import esm
+#import esm
 # for cluster
 #ESM2_MODEL = esm.pretrained.esm2_t48_15B_UR50D()()
 #EXPORTED_LAYERS=48
