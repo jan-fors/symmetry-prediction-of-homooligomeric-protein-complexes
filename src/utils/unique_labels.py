@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 def get_unique_labels(config : dict) -> List[str]:
     """
+    Reads the config data and returns a list of all unique labels.
+    If label groups exist: the single labels are removed and the labelgroup names added.
     """
     metadata_path = config["metadata_file"]
 
@@ -35,10 +37,10 @@ def get_unique_labels(config : dict) -> List[str]:
                 if label in label_groups[key]:
                     to_remove.append(label)
 
-        for t in to_remove:
+        for t in to_remove: # remove unique labels that are part of label groups
             unique_labels.remove(t)
 
-        for key in label_groups.keys():
+        for key in label_groups.keys(): # add labelgroup names to unique_labels
             unique_labels.append(key)
 
     unique_labels.sort()

@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from src.training.scripts.train_epoch import train_epoch
 from src.training.scripts.validate_epoch import validate_epoch
 from src.evaluation.metrics.compute_metrics import compute_metrics
+from pprint import pprint
 import logging
 
 logger = logging.getLogger(__name__)
