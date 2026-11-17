@@ -35,8 +35,10 @@ class HomoAttentionPooling(nn.Module):
           weights: (batch, num_queries, seq_len)
         """
         out, weights = self.attention(x, key_padding_mask)   # (b, n, d)
+        #print(out.shape)
         if self.mode == "concat":
             pooled = out.flatten(start_dim=1)   # answers side by side
         else:
             pooled = out.mean(dim=1)            # average over the queries
+        #print(pooled.shape)
         return pooled, weights     

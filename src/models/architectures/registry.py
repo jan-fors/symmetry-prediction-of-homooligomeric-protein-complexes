@@ -5,7 +5,7 @@ Select a model and specify parameters in the config?
 
 """
 from src.models.architectures.ffn.simple_mlp_classifier import SimpleMLPClassifier
-from src.models.architectures.ffn.mlp_classifier import MLPClassifier
+from src.models.architectures.ffn.deeper_mlp_classifier import DeeperMLPClassifier
 from src.models.architectures.robertalm.robertalmhead import RobertaLMHead
 from src.models.architectures.ffn.simple_attention_mlp_classifier import SimpleAttentionMLPClassifier
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 MODEL_REGISTRY = {
     "simple_mlp_classifier": SimpleMLPClassifier,
-    "mlp_classifier": MLPClassifier,
+    "deeper_mlp_classifier": DeeperMLPClassifier,
     "robertalmhead": RobertaLMHead,
     "simattn_classifier": SimpleAttentionMLPClassifier
 }

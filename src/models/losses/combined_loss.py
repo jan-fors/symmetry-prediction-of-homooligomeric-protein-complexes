@@ -18,8 +18,9 @@ class CombinedLoss(nn.Module):
             self.reg_weights = [factor for factor, _ in regularizations]
             self.regularizations = nn.ModuleList([regu() for _, regu in regularizations])
 
-    def forward(self, logits, target, model):
+    def forward(self, logits, target, model, val : bool = False):
         """
+
         """
         loss = 0.0
 
@@ -27,9 +28,10 @@ class CombinedLoss(nn.Module):
         for weight, fn in zip(self.loss_weights, self.losses):
             loss = loss + weight * fn(logits, target)
 
-        # regularizations
-        if self.regularizations != None:
-            for weight, regu in zip(self.reg_weights, self.regularizations):
-                loss = loss + weight * regu(model)
+        if not val:
+            # regularizations
+            if self.regularizations != None:
+                for weight, regu in zip(self.reg_weights, self.regularizations):
+                    loss = loss + weight * regu(model)
 
         return loss

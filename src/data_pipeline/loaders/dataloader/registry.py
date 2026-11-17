@@ -36,9 +36,15 @@ def create_dataloaders(dataloader_config_data : dict, train : Dataset, val : Dat
     shuffle = dataloader_config_data["shuffle"]
 
     # create dataloader
-    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
-    val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
-    test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
+    if "collate_fn" in dataloader_config_data.keys():
+        train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
+        val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
+        test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
+    else:
+        train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=shuffle)
+        val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle)
+        test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle)
+        
 
     return train_dataloader, val_dataloader, test_dataloader
 

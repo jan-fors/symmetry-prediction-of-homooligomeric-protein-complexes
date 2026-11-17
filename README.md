@@ -20,6 +20,9 @@ python -m src.validate_config <PATH TO CONFIG>
 python -m src.run_experiment <PATH TO CONFIG>
 ```
 
+## Optimize Hyperparameters
+
+
 ### Outputs
 ```sh
 result/

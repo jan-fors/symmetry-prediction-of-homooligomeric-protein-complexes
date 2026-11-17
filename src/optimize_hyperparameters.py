@@ -8,7 +8,7 @@ from optuna.trial import TrialState
 from src.training.hyperparameters.objective import objective
 from functools import partial
 from src.data_pipeline.loaders.dataset_classes.registry import build_datasets
-from src.data_pipeline.loaders.dataloader.dataloader_handler import create_dataloaders
+from src.data_pipeline.loaders.dataloader.registry import create_dataloaders
 from src.data_pipeline.preprocessing.encoders.label import MultiLabelEncoder
 from src.io.writers.output_dir import create_experiment_output_dir
 from src.io.logging.logging import init_logging
@@ -57,6 +57,10 @@ def optimize_hyperparameters(config_path: Path):
         test=test_dataset,
     )
 
+    # derive number of output classes
+    num_classes = label_encoder.get_n_labels()
+    config["model"]["params"]["num_classes"] = num_classes
+
     study = optuna.create_study(direction=direction, sampler=build_sampler(config))
 
     # TODO add sampler
@@ -76,16 +80,16 @@ def optimize_hyperparameters(config_path: Path):
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
 
     logger.info("Study statistics: ")
-    logger.info("  Number of finished trials: ", str(len(study.trials)))
-    logger.info("  Number of pruned trials: ", str(len(pruned_trials)))
-    logger.info("  Number of complete trials: ", str(len(complete_trials)))
+    logger.info(f"  Number of finished trials: {str(len(study.trials))}")
+    logger.info(f"  Number of pruned trials: {str(len(pruned_trials))}")
+    logger.info(f"  Number of complete trials: {str(len(complete_trials))}")
 
     logger.info("Best trial:")
     trial = study.best_trial
 
-    logger.info("  Value: ", str(trial.value))
+    logger.info(f"  Value: {str(trial.value)}")
 
-    logger.info("  Params: ")
+    logger.info(f"  Params: ")
     for key, value in trial.params.items():
         logger.info("    {}: {}".format(key, value))
 

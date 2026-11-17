@@ -21,7 +21,7 @@ def validate_epoch(model, loss_fn, loader, device):
 
             logits = model(X, mask)
 
-            loss = loss_fn(logits, y, model)
+            loss = loss_fn(logits, y, model, True) # boolean at the end declares validation and therefore regularization is not included
 
             losses.append(loss.item())
             all_logits.append(logits.cpu())

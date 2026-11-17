@@ -33,8 +33,10 @@ def objective(
     # build loss_fn
     loss_fn = get_loss(trial, config["loss"])
 
-        # build model
+    # build model
     model = get_model(trial, config["model"])
+
+#    print(model)
 
     model.to(device)
    

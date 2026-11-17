@@ -55,6 +55,10 @@ def run_experiment(config_path : Path):
         test=test_dataset,
     )
 
+    # derive number of output classes
+    num_classes = label_encoder.get_n_labels()
+    config["model"]["params"]["num_classes"] = num_classes
+
     # build model
     model = build_model(config["model"])
     logger.info(model)

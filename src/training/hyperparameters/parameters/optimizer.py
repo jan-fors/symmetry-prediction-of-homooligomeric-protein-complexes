@@ -44,3 +44,4 @@ def get_optimizer(trial, model, optimizer_config : dict):
             )
 
     optimizer = build_optimizer(trial_optimizer_config, model)
+    return optimizer
