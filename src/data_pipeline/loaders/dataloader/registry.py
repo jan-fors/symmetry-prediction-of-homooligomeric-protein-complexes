@@ -1,10 +1,13 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import default_collate
 import logging
 logger = logging.getLogger(__name__)
 
 def collate_proteins(samples):
+    """
+    """
     features, labels = zip(*samples)
     labels = torch.stack([torch.as_tensor(y) for y in labels])
 
@@ -22,8 +25,14 @@ def collate_proteins(samples):
     return padded, labels, mask
 
 
+
+def empty_collate(samples):
+    features, labels = zip(*samples)
+    return default_collate(features), default_collate(labels), None
+
 COLLATE_REGISTRY = {
-    "collate_proteins": collate_proteins
+    "collate_proteins": collate_proteins,
+    "none": empty_collate
 }
 
 def create_dataloaders(dataloader_config_data : dict, train : Dataset, val : Dataset, test : Dataset) -> tuple[DataLoader, DataLoader, DataLoader]:
@@ -41,9 +50,9 @@ def create_dataloaders(dataloader_config_data : dict, train : Dataset, val : Dat
         val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
         test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY[dataloader_config_data["collate_fn"]])
     else:
-        train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=shuffle)
-        val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle)
-        test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle)
+        train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY["none"])
+        val_dataloader = DataLoader(val, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY["none"])
+        test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=shuffle, collate_fn=COLLATE_REGISTRY["none"])
         
 
     return train_dataloader, val_dataloader, test_dataloader
