@@ -18,4 +18,6 @@ class Extract_Layer():
         self.layer = layer
 
     def __call__(self, sample):
-        pass
+        """
+        """
+        return sample["representations"][self.layer]

@@ -1,49 +1,31 @@
 import csv
 
-def save_metrics_to_csv(metrics, file_path):
-    """
-    Save nested training and validation metrics to a CSV file.
 
-    Each row represents one epoch. Metrics with fewer values are left blank.
+def save_metrics_to_csv(history, file_path):
     """
+    Save per-epoch metrics to a CSV file.
 
-    # Flatten the nested dictionary into column names
+    `history` is a list of dicts, one per epoch, as returned by `fit`.
+    Rows may have different keys; missing values are left blank.
+    """
+    if not history:
+        return
+
+    # Union of all keys, in first-seen order, with "epoch" pinned to the front
     columns = []
-
-    for split, split_metrics in metrics.items():
-        for metric_name in split_metrics:
-            columns.append(f"{split}_{metric_name}")
-
-    # Find the largest number of epochs across all metrics
-    number_of_epochs = max(
-        (
-            len(values)
-            for split_metrics in metrics.values()
-            for values in split_metrics.values()
-        ),
-        default=0
-    )
+    for record in history:
+        for key in record:
+            if key not in columns:
+                columns.append(key)
+    if "epoch" in columns:
+        columns.remove("epoch")
+    columns = ["epoch"] + columns
 
     with open(file_path, "w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(
-            csv_file,
-            fieldnames=["epoch"] + columns
-        )
-
+        writer = csv.DictWriter(csv_file, fieldnames=columns, restval="")
         writer.writeheader()
 
-        for epoch_index in range(number_of_epochs):
-            row = {
-                "epoch": epoch_index + 1
-            }
-
-            for split, split_metrics in metrics.items():
-                for metric_name, values in split_metrics.items():
-                    column_name = f"{split}_{metric_name}"
-
-                    if epoch_index < len(values):
-                        row[column_name] = values[epoch_index]
-                    else:
-                        row[column_name] = ""
-
+        for index, record in enumerate(history, start=1):
+            row = dict(record)
+            row.setdefault("epoch", index)
             writer.writerow(row)

@@ -3,170 +3,197 @@ import seaborn as sns
 import numpy as np
 import re
 from pathlib import Path
+import pandas as pd
 
-def plot_metrics(metrics, save_path=None):
+def plot_metrics(history, save_path=None):
     """
-    Plot all metric values against epoch number.
+    Plot per-epoch metrics against epoch number.
 
     Parameters
     ----------
-    metrics : dict
-        Nested dictionary containing metric lists, for example:
-        {
-            "train": {"mean-loss": [...]},
-            "val": {
-                "mean-loss": [...],
-                "accuracy": [...],
-                "macro-f1": [...],
-                "weighted-f1": [...],
-                "auc-pr": [...]
-            }
-        }
-
+    history : list of dict
+        One dict per epoch, as returned by `fit`, e.g.
+        {"epoch": 1, "train_loss": ..., "val_loss": ..., "val_ap_macro": ...}
     save_path : str, optional
         Path where the plot should be saved.
     """
+    if not history:
+        return None
+
+    # Pivot: {"train_loss": [...], "val_ap_macro": [...], ...}
+    series = {}
+    for record in history:
+        for key, value in record.items():
+            if key == "epoch" or not isinstance(value, (int, float)):
+                continue
+            series.setdefault(key, []).append(value)
+
+    epochs = [record.get("epoch", i) for i, record in enumerate(history, start=1)]
+
+    # Losses on their own axis, everything else (bounded 0-1) on the second
+    loss_keys = [k for k in series if "loss" in k.lower()]
+    score_keys = [k for k in series if k not in loss_keys]
 
     sns.set_theme(style="whitegrid")
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    palette = sns.color_palette("tab10", n_colors=len(series))
+    colors = dict(zip(series, palette))
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-
-    # Create enough distinct colors for all train/validation metrics
-    metric_names = [
-        f"{split} - {metric_name}"
-        for split, split_metrics in metrics.items()
-        for metric_name in split_metrics
-    ]
-
-    colors = sns.color_palette("tab10", n_colors=len(metric_names))
-
-    color_index = 0
-
-    for split, split_metrics in metrics.items():
-        for metric_name, values in split_metrics.items():
-            if not values:
-                continue
-
-            epochs = range(1, len(values) + 1)
-
+    for ax, keys, title in (
+        (axes[0], loss_keys, "Loss"),
+        (axes[1], score_keys, "Validation metrics"),
+    ):
+        for key in keys:
+            values = series[key]
             ax.plot(
-                epochs,
+                epochs[: len(values)],
                 values,
-                label=f"{split} {metric_name}",
-                color=colors[color_index],
+                label=key.replace("_", " "),
+                color=colors[key],
                 marker="o",
                 linewidth=2,
                 markersize=4,
             )
+        ax.set_xlabel("Epoch")
+        ax.set_title(title)
+        ax.grid(True, alpha=0.3)
+        if keys:
+            ax.legend()
 
-            color_index += 1
-
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Value")
-    ax.set_title("Training and Validation Metrics")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    axes[1].set_ylim(0, 1)
 
     plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+  
 
-    if save_path is not None:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-
-
-def natural_sort_key(value):
-    """
-    Sort strings naturally, e.g. C1, C2, C10 instead of C1, C10, C2.
-    """
-    return [
-        int(part) if part.isdigit() else part.lower()
-        for part in re.split(r"(\d+)", value)
-    ]
-
-def save_classwise_scores_plot(
-    scores,
+def plot_class_metrics(
     metrics,
-    output_path="classwise_scores.png",
-    figsize=(12, 6),
-    dpi=300
+    metrics_to_show=("precision", "recall", "f1", "ap", "auroc"),
+    figsize=None,
+    show_values=False,
+    save_path=None,
 ):
     """
-    Save a grouped bar plot of selected class-wise evaluation scores.
-
+    Plot per-class scores as a grouped bar chart.
+ 
+    x-axis: all classes in natural order (C1, C2, ..., C10, D1, D2, ...)
+    bars:   one bar per metric for each class
+    Missing values (e.g. AUROC for classes without positives) leave a gap.
+ 
     Parameters
     ----------
-    scores : dict
-        Dictionary containing a "per-class" key.
-
-    metrics : str or list[str]
-        Metric or metrics to plot, for example:
-        "accuracy"
-        or
-        ["accuracy", "macro-f1"]
-
-    output_path : str or pathlib.Path
-        Location where the plot will be saved.
-
-    figsize : tuple
-        Figure size.
-
-    dpi : int
-        Resolution of the saved plot.
+    metrics : pd.DataFrame or str
+        Metrics DataFrame or path to a CSV file. Must contain a "class" column.
+    metrics_to_show : sequence of str
+        Metric columns to display, in this order.
+    figsize : tuple or None
+        Figure size. Chosen automatically from the number of classes if None.
+    show_values : bool
+        Write the score above each bar.
+    save_path : str or None
+        Optional path for saving the plot.
+ 
+    Returns
+    -------
+    fig, ax
     """
-
-    # Allow a single metric to be passed as a string
-    if isinstance(metrics, str):
-        metrics = [metrics]
-
-    # Sort classes naturally: C1, C2, ..., C10
-    classes = sorted(
-        scores["per-class"].keys(),
-        key=natural_sort_key
-    )
-
-    # Validate requested metrics
-    available_metrics = set(scores["per-class"][classes[0]].keys())
-    missing_metrics = set(metrics) - available_metrics
-
-    if missing_metrics:
-        raise ValueError(
-            f"Unknown metric(s): {sorted(missing_metrics)}. "
-            f"Available metrics are: {sorted(available_metrics)}"
-        )
-
-    x = np.arange(len(classes))
-    width = 0.8 / len(metrics)
-
+    # Load
+    df = pd.read_csv(metrics) if isinstance(metrics, str) else metrics.copy()
+    df["class"] = df["class"].astype(str)
+ 
+    # Drop summary rows (these are not classes)
+    df = df[~df["class"].str.upper().isin(["MACRO", "MICRO"])]
+ 
+    cols = [m for m in metrics_to_show if m in df.columns]
+    if not cols:
+        raise ValueError("None of the requested metrics are in the data.")
+    for c in cols + ["support"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+ 
+    # Natural sort: C1, C2, ..., C10, D1, D2, ...
+    def natural_key(name):
+        return [int(p) if p.isdigit() else p.lower() for p in re.split(r"(\d+)", name)]
+ 
+    df = df.set_index("class").loc[sorted(df["class"], key=natural_key)]
+ 
+    n_classes, n_metrics = len(df), len(cols)
+    x = np.arange(n_classes)
+    group_width = 0.82
+    bar_width = group_width / n_metrics
+ 
+    if figsize is None:
+        figsize = (max(10, n_classes * (0.22 * n_metrics + 0.35)), 6)
+ 
+    colors = {
+        "precision": "#4C78A8",
+        "recall": "#F58518",
+        "f1": "#54A24B",
+        "ap": "#B279A2",
+        "auroc": "#E45756",
+    }
+    fallback = plt.get_cmap("tab10").colors
+ 
     fig, ax = plt.subplots(figsize=figsize)
-
-    for i, metric in enumerate(metrics):
-        values = [
-            scores["per-class"][class_name][metric]
-            for class_name in classes
-        ]
-
-        offset = (i - (len(metrics) - 1) / 2) * width
-
-        ax.bar(
+ 
+    for k, metric in enumerate(cols):
+        offset = (k - (n_metrics - 1) / 2) * bar_width
+        values = df[metric].to_numpy(dtype=float)
+        bars = ax.bar(
             x + offset,
-            values,
-            width,
-            label=metric
+            np.nan_to_num(values, nan=0.0),
+            width=bar_width,
+            color=colors.get(metric, fallback[k % 10]),
+            label=metric.upper(),
+            edgecolor="white",
+            linewidth=0.5,
         )
-
-    ax.set_xlabel("Class")
-    ax.set_ylabel("Score")
-    ax.set_title("Class-wise Evaluation Scores")
+        if show_values:
+            for bar, v in zip(bars, values):
+                if not np.isnan(v):
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        v + 0.01,
+                        f"{v:.2f}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=7,
+                        rotation=90,
+                    )
+ 
+    # Class labels, with support underneath if available
+    if "support" in df.columns:
+        labels = [
+            f"{c}\nn={int(s)}" if not np.isnan(s) else c
+            for c, s in zip(df.index, df["support"])
+        ]
+    else:
+        labels = list(df.index)
+ 
     ax.set_xticks(x)
-    ax.set_xticklabels(classes, rotation=45, ha="right")
-    ax.set_ylim(0, 1.05)
-    ax.legend()
-    ax.grid(axis="y", alpha=0.3)
-
+    ax.set_xticklabels(labels, fontsize=10)
+    ax.set_xlim(-0.6, n_classes - 0.4)
+    ax.set_ylim(0, 1.12 if show_values else 1.05)
+    ax.set_yticks(np.arange(0, 1.01, 0.1))
+    ax.set_ylabel("Score")
+    ax.set_xlabel("Class")
+ 
+    ax.yaxis.grid(True, color="#dddddd", linewidth=0.8)
+    ax.set_axisbelow(True)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+ 
+    ax.legend(
+        ncol=n_metrics,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.0),
+        frameon=False,
+        fontsize=10,
+    )
+    ax.set_title("Per-class scores", fontsize=14, fontweight="bold", pad=34)
     fig.tight_layout()
-
-    # Create output directory if necessary
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
+ 
+    if save_path:
+        fig.savefig(save_path, dpi=200, bbox_inches="tight", facecolor="white")
+ 
+    return fig, ax

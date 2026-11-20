@@ -46,7 +46,10 @@ def build_datasets(dataset_config_data : dict, label_encoder = None) -> tuple[Da
         data_dir = features[0]["data_dir"]
 
         # create transformations
-        transforms = create_transformations(features[0]["augmentations"])
+        if "augmentations" in features[0].keys():
+            transforms = create_transformations(features[0]["augmentations"])
+        else:
+            transforms = None
 
         train = dataset_class(data_dir, metadata_file_path, train_ids, label_encoder=label_encoder, transform=transforms)
         val = dataset_class(data_dir, metadata_file_path, val_ids, label_encoder=label_encoder, transform=transforms)
